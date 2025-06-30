@@ -27,3 +27,13 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+# Customização para o seu projeto:
+
+# Arquivos de IDE específicos do IntelliJ (para garantir)
+.idea/
+*.iml
+
+# Ignorar a pasta 'modules' dentro de 'src'
+# Isso garante que nenhum conteúdo dentro de src/modules seja rastreado
+src/modules/
