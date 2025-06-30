@@ -13,6 +13,7 @@ public class registro {
     private static final String URL = "jdbc:mysql://localhost:3306/hoteldb?useSSL=false&serverTimezone=UTC";
     private static final String USER = "root";
     private static final String PASSWORD = "@Volkadas2800,";
+    private static final int MAX_ANDAR = 25;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -62,46 +63,116 @@ public class registro {
 
     public static void registrarNovoHospedeComQuarto(Scanner scanner) {
         System.out.println("\n--- Registrar Novo Hóspede ---");
-        System.out.print("Nome do Hóspede: ");
-        String nome = scanner.nextLine();
-        System.out.print("CPF do Hóspede: ");
-        String cpf = scanner.nextLine();
 
-        System.out.print("Tipo do Quarto (Ex: Standard, Deluxe): ");
-        String tipoQuarto = scanner.nextLine();
-
-        System.out.print("Andar do Quarto: ");
-        int andar = -1;
-        try {
-            andar = Integer.parseInt(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            System.out.println("Andar inválido. Usando 0.");
-            andar = 0;
+        String nome;
+        while (true) {
+            System.out.print("Nome do Hóspede: ");
+            nome = scanner.nextLine().trim();
+            if (nome.isEmpty()) {
+                System.out.println("Erro: O nome do hóspede não pode ser vazio. Por favor, digite um nome.");
+            } else {
+                break;
+            }
         }
 
-        System.out.print("Número do Quarto (Ex: 101): ");
-        String numeroQuartoInput = scanner.nextLine();
+        String cpf;
+        while (true) {
+            System.out.print("CPF do Hóspede: ");
+            cpf = scanner.nextLine().trim();
+            if (cpf.isEmpty()) {
+                System.out.println("Erro: O CPF do hóspede não pode ser vazio. Por favor, digite um CPF.");
+            } else {
+                break;
+            }
+        }
 
-        System.out.print("Valor da Diária que o Hóspede irá pagar (Ex: 150.00): ");
-        double valorDiariaPago = -1;
-        try {
-            valorDiariaPago = Double.parseDouble(scanner.nextLine());
-        } catch (NumberFormatException e) {
-            System.out.println("Valor da diária inválido. Usando 0.00.");
-            valorDiariaPago = 0.0;
+        String tipoQuarto;
+        while (true) {
+            System.out.print("Tipo do Quarto (Ex: Standard, Deluxe): ");
+            tipoQuarto = scanner.nextLine().trim(); // MOVIDO PARA DENTRO DO LOOP
+            if (tipoQuarto.isEmpty()) {
+                System.out.println("Erro: O tipo do quarto não pode ser vazio. Por favor, digite um tipo.");
+            } else {
+                break;
+            }
+        }
+
+        int andar;
+        while (true) {
+            System.out.print("Andar do Quarto (Máx. " + MAX_ANDAR + "): ");
+            String andarInput = scanner.nextLine().trim(); // MOVIDO PARA DENTRO DO LOOP
+            if (andarInput.isEmpty()) {
+                System.out.println("Erro: O andar do quarto não pode ser vazio. Por favor, digite um número.");
+                continue;
+            }
+            try {
+                andar = Integer.parseInt(andarInput);
+                if (andar < 0 || andar > MAX_ANDAR) {
+                    System.out.println("Andar inválido. Por favor, digite um número entre 0 e " + MAX_ANDAR + ".");
+                } else {
+                    break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Erro: Andar inválido. Por favor, digite um número inteiro.");
+            }
+        }
+
+        String numeroQuartoInput;
+        while (true) {
+            System.out.print("Número do Quarto (Ex: 101): ");
+            numeroQuartoInput = scanner.nextLine().trim();
+            if (numeroQuartoInput.isEmpty()) {
+                System.out.println("Erro: O número do quarto não pode ser vazio. Por favor, digite um número.");
+            } else {
+                break;
+            }
+        }
+
+        double valorDiariaPago;
+        while (true) {
+            System.out.print("Valor da Diária que o Hóspede irá pagar (Ex: 150.00): ");
+            String valorDiariaInput = scanner.nextLine().trim();
+            if (valorDiariaInput.isEmpty()) {
+                System.out.println("Erro: O valor da diária não pode ser vazio. Por favor, digite um valor.");
+                continue;
+            }
+            try {
+                valorDiariaPago = Double.parseDouble(valorDiariaInput);
+                if (valorDiariaPago < 0) {
+                    System.out.println("Erro: O valor da diária não pode ser negativo. Por favor, digite um valor válido.");
+                } else {
+                    break;
+                }
+            } catch (NumberFormatException e) {
+                System.out.println("Erro: Valor da diária inválido. Por favor, digite um número decimal (ex: 150.00).");
+            }
         }
 
         int quartoId = -1;
 
         try (Connection conexao = DriverManager.getConnection(URL, USER, PASSWORD)) {
-            String sqlBuscarQuarto = "SELECT id, preco_diaria FROM quarto WHERE numero_quarto = ?";
+            String sqlBuscarQuarto = "SELECT id FROM quarto WHERE numero_quarto = ?";
             try (PreparedStatement stmtBuscarQuarto = conexao.prepareStatement(sqlBuscarQuarto)) {
                 stmtBuscarQuarto.setString(1, numeroQuartoInput);
                 try (ResultSet rs = stmtBuscarQuarto.executeQuery()) {
                     if (rs.next()) {
                         quartoId = rs.getInt("id");
-                        double precoBaseQuartoExistente = rs.getDouble("preco_diaria");
-                        System.out.println("Quarto '" + numeroQuartoInput + "' encontrado (ID: " + quartoId + ", Preço Base Registrado: " + precoBaseQuartoExistente + ").");
+                        System.out.println("Quarto '" + numeroQuartoInput + "' encontrado (ID: " + quartoId + ").");
+
+                        String sqlUpdateQuarto = "UPDATE quarto SET tipo_quarto = ?, andar = ?, preco_diaria = ? WHERE id = ?";
+                        try (PreparedStatement stmtUpdateQuarto = conexao.prepareStatement(sqlUpdateQuarto)) {
+                            stmtUpdateQuarto.setString(1, tipoQuarto);
+                            stmtUpdateQuarto.setInt(2, andar);
+                            stmtUpdateQuarto.setDouble(3, valorDiariaPago);
+                            stmtUpdateQuarto.setInt(4, quartoId);
+                            int linhasAfetadasUpdate = stmtUpdateQuarto.executeUpdate();
+                            if (linhasAfetadasUpdate > 0) {
+                                System.out.println("Detalhes do Quarto '" + numeroQuartoInput + "' atualizados com sucesso!");
+                            } else {
+                                System.out.println("Nenhum detalhe do Quarto '" + numeroQuartoInput + "' foi alterado (dados iguais).");
+                            }
+                        }
+
                     }
                 }
             }
@@ -132,6 +203,16 @@ public class registro {
             }
 
             if (quartoId != -1) {
+                String sqlCheckCpf = "SELECT COUNT(*) FROM hospede WHERE cpf = ?";
+                try(PreparedStatement stmtCheckCpf = conexao.prepareStatement(sqlCheckCpf)) {
+                    stmtCheckCpf.setString(1, cpf);
+                    ResultSet rsCheckCpf = stmtCheckCpf.executeQuery();
+                    if(rsCheckCpf.next() && rsCheckCpf.getInt(1) > 0) {
+                        System.out.println("Erro: Já existe um hóspede cadastrado com este CPF. Registro cancelado.");
+                        return;
+                    }
+                }
+
                 String sqlInsertHospede = "INSERT INTO hospede (nome, cpf, quarto_id, valor_diaria_pago) VALUES (?, ?, ?, ?)";
                 try (PreparedStatement stmtInsertHospede = conexao.prepareStatement(sqlInsertHospede)) {
                     stmtInsertHospede.setString(1, nome);
@@ -184,7 +265,7 @@ public class registro {
                 String tipoQuarto = rs.getString("tipo_quarto");
                 int andar = rs.getInt("andar");
 
-                if (rs.wasNull()) {
+                if (numeroQuartoExibido == null) {
                     numeroQuartoExibido = "N/A";
                     tipoQuarto = "N/A";
                     andar = 0;
